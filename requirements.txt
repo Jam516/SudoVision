@@ -1,4 +1,4 @@
-st_aggrid
+streamlit-aggrid
 pandas
 requests
 datetime

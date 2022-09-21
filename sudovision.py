@@ -6,7 +6,6 @@ from requests import get, post
 import time
 import datetime
 import json
-import os
 
 HEADER = {"x-dune-api-key" : st.secrets["API_KEY"]}
 BASE_URL = "https://api.dune.com/api/v1/"

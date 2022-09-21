@@ -158,7 +158,7 @@ pooldetails['Manual Inventory Change (NFTs)'] = pooldetails['NFT Balance'] - poo
 selection = aggrid_interactive_table(df=pooltable)
 # st.table(df)
 
-if selection:
-    st.write("Select a row to see pool specific stats:")
+st.write("Select a row to see pool specific stats:")
+if selection["selected_rows"]:
     stats = pooldetails[pooldetails['Pair Address'] == selection["selected_rows"][0]["Pair Address"]]
     st.json(stats.to_json(orient = 'records'))

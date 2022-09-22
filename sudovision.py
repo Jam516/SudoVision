@@ -162,35 +162,35 @@ pooldetails['Current Inventory Value'] = pooldetails['ETH Balance'] + (pooldetai
 pooldetails['Inventory Value If Held'] = pooldetails['Initial ETH'] + pooldetails['Manual Inventory Change (ETH)'] + ((pooldetails['Initial NFTs']+pooldetails['Manual Inventory Change (NFTs)']) * pooldetails['Spot Price'])
 pooldetails['Impermanent Loss'] = pooldetails['Current Inventory Value'] - pooldetails['Inventory Value If Held']
 
-pooldetails = pooldetails[['Pool Address',
-            'NFT Contract',
-            'ETH Balance',
-            'NFT Balance',
-            'Spot Price',
-
-            'Initial ETH',
-            'Initial NFTs',
-            'Initial Spot Price',
-
-            'Manual Inventory Change (ETH)',
-            'Manual Inventory Change (NFTs)',
-
-            'Inventory Change By Trading (ETH)',
-            'Inventory Change By Trading (NFTs)',
-
-            'Current Inventory Value',
-            'Inventory Value If Held',
-            'Impermanent Loss',
-
-            'Age (Days)',
-            'Trading Volume (ETH)',
-            'Fees Earned']]
+# pooldetails = pooldetails[['Pool Address',
+#             'NFT Contract',
+#             'ETH Balance',
+#             'NFT Balance',
+#             'Spot Price',
+#
+#             'Initial ETH',
+#             'Initial NFTs',
+#             'Initial Spot Price',
+#
+#             'Manual Inventory Change (ETH)',
+#             'Manual Inventory Change (NFTs)',
+#
+#             'Inventory Change By Trading (ETH)',
+#             'Inventory Change By Trading (NFTs)',
+#
+#             'Current Inventory Value',
+#             'Inventory Value If Held',
+#             'Impermanent Loss',
+#
+#             'Age (Days)',
+#             'Trading Volume (ETH)',
+#             'Fees Earned']]
 
 selection = aggrid_interactive_table(df=pooltable)
 # st.table(df)
 
 st.write("Select a row to see pool specific stats:")
 if selection["selected_rows"]:
-    stats = pooldetails[pooldetails['Pair Address'] == selection["selected_rows"][0]["Pair Address"]]
+    stats = pooldetails[pooldetails['Pool Address'] == selection["selected_rows"][0]["Pool Address"]]
     # st.json(stats.to_json(orient = 'records'))
     st.dataframe(stats.T)

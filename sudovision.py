@@ -28,7 +28,7 @@ def execute_query(address):
     Returns the execution ID of the instance which is executing the query.
     """
 
-    url = make_api_url("query", "execute", '1279290')
+    url = make_api_url("query", "execute", '1295309')
     datas = {"query_parameters": { "Creator Address":address}}
     response = post(url, headers=HEADER, data=json.dumps(datas))
     execution_id = response.json()['execution_id']
@@ -108,10 +108,10 @@ while solved == 0:
 
 pools = get_query_results(ct)
 pools = pd.DataFrame(pools.json()['result']['rows'])
-pools.rename(columns={'raw_pair_address': 'Pair Address'
+pools.rename(columns={'pool_address': 'Pair Address'
     , 'owner_fee_volume_eth': 'Fees Earned'
     , 'eth_balance': 'ETH Balance'
-    , 'tokens_held': 'NFT Balance'
+    , 'nft_balance': 'NFT Balance'
     , 'eth_volume': 'Trading Volume (ETH)'
     , 'usd_volume': 'Trading Volume (USD)'
     , 'nfts_traded': 'NFTs Traded'

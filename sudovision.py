@@ -20,8 +20,7 @@ def make_api_url(module, action, ID):
 
     return url
 
-@st.cache
-def execute_query(address):
+def execute_query():
     """
     Takes in the query ID.
     Calls the API to execute the query.
@@ -29,8 +28,9 @@ def execute_query(address):
     """
 
     url = make_api_url("query", "execute", '1295309')
-    datas = {"query_parameters": { "Creator Address":address}}
-    response = post(url, headers=HEADER, data=json.dumps(datas))
+    # datas = {"query_parameters": { "Creator Address":address}}
+    response = post(url, headers=HEADER)
+    # , data=json.dumps(datas)
     execution_id = response.json()['execution_id']
 
     return execution_id
@@ -95,7 +95,7 @@ st.title('SudoSwap Pool Analysis')
 
 owner = st.text_input('Pool Owner Address', '0xf4f9e8cdae4b69ff3e0beca0dff65b9b718c3161')
 
-ct = execute_query(owner)
+ct = execute_query()
 
 while solved == 0:
     response = get_query_status(ct)
@@ -108,7 +108,10 @@ while solved == 0:
 
 pools = get_query_results(ct)
 pools = pd.DataFrame(pools.json()['result']['rows'])
-pools.rename(columns={'pool_address': 'Pair Address'
+pool = pools[pools['creator_address'] == owner.lower()]
+pools.rename(columns={'pool_address': 'Pool Address'
+    , 'nftcontractaddress' : 'NFT Contract'
+    , 'creator_address' : 'Creator'
     , 'owner_fee_volume_eth': 'Fees Earned'
     , 'eth_balance': 'ETH Balance'
     , 'nft_balance': 'NFT Balance'
@@ -127,7 +130,7 @@ pools.rename(columns={'pool_address': 'Pair Address'
     , 'eth_change_trading': 'Inventory Change By Trading (ETH)'
     , 'nft_change_trading': 'Inventory Change By Trading (NFTs)'}, inplace=True)
 
-pooltable = pools[['Pair Address',
+pooltable = pools[['Pool Address',
             'Fees Earned',
             'ETH Balance',
             'NFT Balance',
@@ -139,7 +142,8 @@ pooltable = pools[['Pair Address',
             'Pool Type',
             'Pricing Type']]
 
-pooldetails = pools[['Pair Address',
+pooldetails = pools[['Pool Address',
+            'NFT Contract'
             'ETH Balance',
             'NFT Balance',
             'Spot Price',

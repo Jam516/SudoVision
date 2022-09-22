@@ -162,7 +162,7 @@ pooldetails['Current Inventory Value'] = pooldetails['ETH Balance'] + (pooldetai
 pooldetails['Inventory Value If Held'] = pooldetails['Initial ETH'] + pooldetails['Manual Inventory Change (ETH)'] + ((pooldetails['Initial NFTs']+pooldetails['Manual Inventory Change (NFTs)']) * pooldetails['Spot Price'])
 pooldetails['Impermanent Loss'] = pooldetails['Current Inventory Value'] - pooldetails['Inventory Value If Held']
 
-pooldetails = pools[['Pool Address',
+pooldetails = pooldetails[['Pool Address',
             'NFT Contract',
             'ETH Balance',
             'NFT Balance',

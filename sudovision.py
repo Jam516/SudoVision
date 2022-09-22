@@ -143,7 +143,7 @@ pooltable = pools[['Pool Address',
             'Pricing Type']]
 
 pooldetails = pools[['Pool Address',
-            'NFT Contract'
+            'NFT Contract',
             'ETH Balance',
             'NFT Balance',
             'Spot Price',
@@ -158,6 +158,33 @@ pooldetails = pools[['Pool Address',
 
 pooldetails['Manual Inventory Change (ETH)'] = pooldetails['ETH Balance'] - pooldetails['Initial ETH'] - pooldetails['Inventory Change By Trading (ETH)']
 pooldetails['Manual Inventory Change (NFTs)'] = pooldetails['NFT Balance'] - pooldetails['Initial NFTs'] - pooldetails['Inventory Change By Trading (NFTs)']
+pooldetails['Current Inventory Value'] = pooldetails['ETH Balance'] + (pooldetails['NFT Balance'] * pooldetails['Spot Price'])
+pooldetails['Inventory Value If Held'] = pooldetails['Initial ETH'] + pooldetails['Manual Inventory Change (ETH)'] + ((pooldetails['Initial NFTs']+pooldetails['Manual Inventory Change (NFTs)']) * pooldetails['Spot Price'])
+pooldetails['Impermanent Loss'] = pooldetails['Current Inventory Value'] - pooldetails['Inventory Value If Held']
+
+pooldetails = pools[['Pool Address',
+            'NFT Contract',
+            'ETH Balance',
+            'NFT Balance',
+            'Spot Price',
+
+            'Initial ETH',
+            'Initial NFTs',
+            'Initial Spot Price',
+
+            'Manual Inventory Change (ETH)',
+            'Manual Inventory Change (NFTs)',
+
+            'Inventory Change By Trading (ETH)',
+            'Inventory Change By Trading (NFTs)',
+
+            'Current Inventory Value',
+            'Inventory Value If Held',
+            'Impermanent Loss',
+
+            'Age (Days)',
+            'Trading Volume (ETH)',
+            'Fees Earned']]
 
 selection = aggrid_interactive_table(df=pooltable)
 # st.table(df)
@@ -165,4 +192,5 @@ selection = aggrid_interactive_table(df=pooltable)
 st.write("Select a row to see pool specific stats:")
 if selection["selected_rows"]:
     stats = pooldetails[pooldetails['Pair Address'] == selection["selected_rows"][0]["Pair Address"]]
-    st.json(stats.to_json(orient = 'records'))
+    # st.json(stats.to_json(orient = 'records'))
+    st.dataframe(stats.T)

@@ -125,10 +125,10 @@ ct = execute_query(owner)
 
 pools = loading_loop(ct)
 pools = pd.DataFrame(pools.json()['result']['rows'])
-pool = pools[pools['creator_address'] == owner.lower()]
+# pool = pools[pools['creator_address'] == owner.lower()]
 pools.rename(columns={'pool_address': 'Pool Address'
     , 'nft_contract_address' : 'NFT Contract'
-    , 'creator_address' : 'Creator'
+    # , 'creator_address' : 'Creator'
     , 'pool_fee_volume_eth': 'Fees Earned'
     , 'eth_balance': 'ETH Balance'
     , 'nft_balance': 'NFT Balance'

@@ -125,7 +125,7 @@ st.title('SudoSwap Pool Analysis')
 
 'Enter the NFT contract address'
 
-owner = st.text_input('Pool Owner Address', '0x49cf6f5d44e70224e2e23fdcdd2c053f30ada28b')
+owner = st.text_input('NFT Contract Address', '0x49cf6f5d44e70224e2e23fdcdd2c053f30ada28b')
 
 ct = execute_query(owner)
 

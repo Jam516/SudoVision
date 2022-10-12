@@ -125,10 +125,9 @@ ct = execute_query(owner)
 
 pools = loading_loop(ct)
 pools = pd.DataFrame(pools.json()['result']['rows'])
-# pool = pools[pools['creator_address'] == owner.lower()]
 pools.rename(columns={'pool_address': 'Pool Address'
     , 'nft_contract_address' : 'NFT Contract'
-    # , 'creator_address' : 'Creator'
+    , 'name':'Name'
     , 'pool_fee_volume_eth': 'Fees Earned'
     , 'eth_balance': 'ETH Balance'
     , 'nft_balance': 'NFT Balance'
@@ -157,34 +156,21 @@ pools['Today'] = pd.to_datetime("now")
 pools['Creation Time'] = pd.to_datetime(pools['Creation Time'])
 pools['Age'] = (pools['Today'] - pools['Creation Time'])
 
-pooltable = pools[['Pool Address',
+pooltable = pools[['Name',
             'Fees Earned',
             'ETH Balance',
             'NFT Balance',
             'Trading Volume (ETH)',
             'Trading Volume (USD)',
+            'Pool Address',
             'NFTs Traded',
             'Spot Price',
             'Delta',
             'Pool Type',
             'Bonding Curve']]
 
-# pooldetails = pools[['Pool Address',
-#             'NFT Contract',
-#             'ETH Balance',
-#             'NFT Balance',
-#             'Spot Price',
-#             'Initial ETH',
-#             'Initial NFTs',
-#             'Initial Spot Price',
-#             'Inventory Change By Trading (ETH)',
-#             'Inventory Change By Trading (NFTs)',
-#             'Creation Time',
-#             'Trading Volume (ETH)',
-#             'Fees Earned']]
-
-pooldetails = pools[['Pool Address',
-            'NFT Contract',
+pooldetails = pools[['Name',
+            'Pool Address',
             'ETH Balance',
             'NFT Balance',
             'Spot Price',

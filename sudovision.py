@@ -210,7 +210,7 @@ pooldetails = pools[['Pool Address',
 selection = aggrid_interactive_table(df=pooltable)
 # st.table(df)
 
-st.write("Select a row to see pool specific stats:")
+st.write("**Select a row to see pool specific stats:**")
 if selection["selected_rows"]:
     stats = pooldetails[pooldetails['Pool Address'] == selection["selected_rows"][0]["Pool Address"]]
 
@@ -222,6 +222,7 @@ if selection["selected_rows"]:
     earnings['Day'] = earnings['Day'].str[:10]
     earnings['Day']= pd.to_datetime(earnings['Day'])
 
+    ''
     '**Pool Earnings Over Time**'
     st.bar_chart(data=earnings, y='Fees Earned (ETH)', x='Day')
 

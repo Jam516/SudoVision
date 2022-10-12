@@ -122,6 +122,7 @@ st.set_page_config(
 )
 
 st.title('SudoSwap Pool Analysis')
+st.markdown("[By Kofi](###https://twitter.com/0xKofi)")
 
 'Enter the address you used to create your pool'
 

@@ -9,7 +9,6 @@ import json
 
 HEADER = {"x-dune-api-key" : st.secrets["API_KEY"]}
 BASE_URL = "https://api.dune.com/api/v1/"
-solved = 0
 
 def make_api_url(module, action, ID):
     """
@@ -20,17 +19,32 @@ def make_api_url(module, action, ID):
 
     return url
 
-def execute_query():
+def execute_query(address):
     """
     Takes in the query ID.
     Calls the API to execute the query.
     Returns the execution ID of the instance which is executing the query.
     """
 
-    url = make_api_url("query", "execute", '1295309')
-    # datas = {"query_parameters": { "Creator Address":address}}
-    response = post(url, headers=HEADER)
-    # , data=json.dumps(datas)
+    url = make_api_url("query", "execute", '1362901')
+    datas = {"query_parameters": { "Creator Address":address}}
+    response = post(url, headers=HEADER, data=json.dumps(datas))
+
+    execution_id = response.json()['execution_id']
+
+    return execution_id
+
+def execute_query2(address):
+    """
+    Takes in the query ID.
+    Calls the API to execute the query.
+    Returns the execution ID of the instance which is executing the query.
+    """
+
+    url = make_api_url("query", "execute", '1392569')
+    datas = {"query_parameters": { "Pool Address":address}}
+    response = post(url, headers=HEADER, data=json.dumps(datas))
+
     execution_id = response.json()['execution_id']
 
     return execution_id
@@ -87,48 +101,61 @@ def aggrid_interactive_table(df: pd.DataFrame):
 
     return selection
 
+def loading_loop(query):
+    solved = 0
+    while solved == 0:
+        response = get_query_status(query)
+        state = response.json()['state']
+        if state == 'QUERY_STATE_COMPLETED':
+            solved = 1
+        else:
+            time.sleep(1)
+    return get_query_results(query)
+
+
 ################## Visuals #########################
 
 st.title('SudoSwap Pool Analysis')
 
 'Enter the address you used to create your pool'
 
-owner = st.text_input('Pool Owner Address', '0xf4f9e8cdae4b69ff3e0beca0dff65b9b718c3161')
+owner = st.text_input('Pool Owner Address', '0xd90eb9d58b8abf0c82867b5483e77373a5634eeb')
 
-ct = execute_query()
+ct = execute_query(owner)
 
-while solved == 0:
-    response = get_query_status(ct)
-    state = response.json()['state']
-    if state == 'QUERY_STATE_COMPLETED':
-        solved = 1
-    else:
-        time.sleep(2)
-# solved = 0
-
-pools = get_query_results(ct)
+pools = loading_loop(ct)
 pools = pd.DataFrame(pools.json()['result']['rows'])
 pool = pools[pools['creator_address'] == owner.lower()]
 pools.rename(columns={'pool_address': 'Pool Address'
-    , 'nftcontractaddress' : 'NFT Contract'
+    , 'nft_contract_address' : 'NFT Contract'
     , 'creator_address' : 'Creator'
-    , 'owner_fee_volume_eth': 'Fees Earned'
+    , 'pool_fee_volume_eth': 'Fees Earned'
     , 'eth_balance': 'ETH Balance'
     , 'nft_balance': 'NFT Balance'
     , 'eth_volume': 'Trading Volume (ETH)'
     , 'usd_volume': 'Trading Volume (USD)'
     , 'nfts_traded': 'NFTs Traded'
-    , 'spotprice': 'Spot Price'
+    , 'spot_price': 'Spot Price'
     , 'delta': 'Delta'
-    , 'pooltype': 'Pool Type'
-    , 'pricing_type': 'Pricing Type'
+    , 'bonding_curve': 'Bonding Curve'
+    , 'pool_type': 'Pool Type'
 
-    , 'initial_eth': 'Initial ETH'
-    , 'initial_nft_count': 'Initial NFTs'
-    , 'initial_price': 'Initial Spot Price'
-    , 'days_passed': 'Age (Days)'
+    , 'initial_eth_balance': 'Initial ETH'
+    , 'initial_nft_balance': 'Initial NFTs'
+    , 'initial_spot_price': 'Initial Spot Price'
+    , 'creation_block_time': 'Creation Time'
     , 'eth_change_trading': 'Inventory Change By Trading (ETH)'
     , 'nft_change_trading': 'Inventory Change By Trading (NFTs)'}, inplace=True)
+
+pools['Manual Inventory Change (ETH)'] = pools['ETH Balance'] - pools['Initial ETH'] - pools['Inventory Change By Trading (ETH)']
+pools['Manual Inventory Change (NFTs)'] = pools['NFT Balance'] - pools['Initial NFTs'] - pools['Inventory Change By Trading (NFTs)']
+pools['Current Inventory Value'] = pools['ETH Balance'] + (pools['NFT Balance'] * pools['Spot Price'])
+pools['Inventory Value If Held'] = pools['Initial ETH'] + pools['Manual Inventory Change (ETH)'] + ((pools['Initial NFTs']+pools['Manual Inventory Change (NFTs)']) * pools['Spot Price'])
+pools['Impermanent Loss'] = pools['Inventory Value If Held'] - pools['Current Inventory Value']
+pools['Creation Time'] = pools['Creation Time'].str[:10]
+pools['Today'] = pd.to_datetime("now")
+pools['Creation Time'] = pd.to_datetime(pools['Creation Time'])
+pools['Age'] = (pools['Today'] - pools['Creation Time'])
 
 pooltable = pools[['Pool Address',
             'Fees Earned',
@@ -140,51 +167,45 @@ pooltable = pools[['Pool Address',
             'Spot Price',
             'Delta',
             'Pool Type',
-            'Pricing Type']]
+            'Bonding Curve']]
+
+# pooldetails = pools[['Pool Address',
+#             'NFT Contract',
+#             'ETH Balance',
+#             'NFT Balance',
+#             'Spot Price',
+#             'Initial ETH',
+#             'Initial NFTs',
+#             'Initial Spot Price',
+#             'Inventory Change By Trading (ETH)',
+#             'Inventory Change By Trading (NFTs)',
+#             'Creation Time',
+#             'Trading Volume (ETH)',
+#             'Fees Earned']]
 
 pooldetails = pools[['Pool Address',
             'NFT Contract',
             'ETH Balance',
             'NFT Balance',
             'Spot Price',
+
             'Initial ETH',
             'Initial NFTs',
             'Initial Spot Price',
+
+            'Manual Inventory Change (ETH)',
+            'Manual Inventory Change (NFTs)',
+
             'Inventory Change By Trading (ETH)',
             'Inventory Change By Trading (NFTs)',
-            'Age (Days)',
+
+            'Current Inventory Value',
+            'Inventory Value If Held',
+            'Impermanent Loss',
+
+            'Age',
             'Trading Volume (ETH)',
             'Fees Earned']]
-
-pooldetails['Manual Inventory Change (ETH)'] = pooldetails['ETH Balance'] - pooldetails['Initial ETH'] - pooldetails['Inventory Change By Trading (ETH)']
-pooldetails['Manual Inventory Change (NFTs)'] = pooldetails['NFT Balance'] - pooldetails['Initial NFTs'] - pooldetails['Inventory Change By Trading (NFTs)']
-pooldetails['Current Inventory Value'] = pooldetails['ETH Balance'] + (pooldetails['NFT Balance'] * pooldetails['Spot Price'])
-pooldetails['Inventory Value If Held'] = pooldetails['Initial ETH'] + pooldetails['Manual Inventory Change (ETH)'] + ((pooldetails['Initial NFTs']+pooldetails['Manual Inventory Change (NFTs)']) * pooldetails['Spot Price'])
-pooldetails['Impermanent Loss'] = pooldetails['Current Inventory Value'] - pooldetails['Inventory Value If Held']
-
-# pooldetails = pooldetails[['Pool Address',
-#             'NFT Contract',
-#             'ETH Balance',
-#             'NFT Balance',
-#             'Spot Price',
-#
-#             'Initial ETH',
-#             'Initial NFTs',
-#             'Initial Spot Price',
-#
-#             'Manual Inventory Change (ETH)',
-#             'Manual Inventory Change (NFTs)',
-#
-#             'Inventory Change By Trading (ETH)',
-#             'Inventory Change By Trading (NFTs)',
-#
-#             'Current Inventory Value',
-#             'Inventory Value If Held',
-#             'Impermanent Loss',
-#
-#             'Age (Days)',
-#             'Trading Volume (ETH)',
-#             'Fees Earned']]
 
 selection = aggrid_interactive_table(df=pooltable)
 # st.table(df)
@@ -192,5 +213,16 @@ selection = aggrid_interactive_table(df=pooltable)
 st.write("Select a row to see pool specific stats:")
 if selection["selected_rows"]:
     stats = pooldetails[pooldetails['Pool Address'] == selection["selected_rows"][0]["Pool Address"]]
-    # st.json(stats.to_json(orient = 'records'))
-    st.dataframe(stats.T)
+
+    earn = execute_query2(selection["selected_rows"][0]["Pool Address"])
+
+    earnings = loading_loop(earn)
+    earnings = pd.DataFrame(earnings.json()['result']['rows'])
+    earnings.rename(columns={'daily_fees': 'Fees Earned (ETH)', 'day' : 'Day'}, inplace=True)
+    earnings['Day'] = earnings['Day'].str[:10]
+    earnings['Day']= pd.to_datetime(earnings['Day'])
+
+    '**Pool Earnings Over Time**'
+    st.bar_chart(data=earnings, y='Fees Earned (ETH)', x='Day')
+
+    st.table(stats.T)

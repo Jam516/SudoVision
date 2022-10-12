@@ -26,8 +26,8 @@ def execute_query(address):
     Returns the execution ID of the instance which is executing the query.
     """
 
-    url = make_api_url("query", "execute", '1362901')
-    datas = {"query_parameters": { "Creator Address":address}}
+    url = make_api_url("query", "execute", '1393519')
+    datas = {"query_parameters": { "NFT Contract Address":address}}
     response = post(url, headers=HEADER, data=json.dumps(datas))
 
     execution_id = response.json()['execution_id']
@@ -115,11 +115,17 @@ def loading_loop(query):
 
 ################## Visuals #########################
 
+st.set_page_config(
+    page_title="Sudoswap.Vision",
+    page_icon="✨",
+    layout="wide",
+)
+
 st.title('SudoSwap Pool Analysis')
 
-'Enter the address you used to create your pool'
+'Enter the NFT contract address'
 
-owner = st.text_input('Pool Owner Address', '0x50664ede715e131f584d3e7eaabd7818bb20a068')
+owner = st.text_input('Pool Owner Address', '0x49cf6f5d44e70224e2e23fdcdd2c053f30ada28b')
 
 ct = execute_query(owner)
 
@@ -128,7 +134,7 @@ pools = pd.DataFrame(pools.json()['result']['rows'])
 pools.rename(columns={'pool_address': 'Pool Address'
     , 'nft_contract_address' : 'NFT Contract'
     , 'name':'Name'
-    , 'pool_fee_volume_eth': 'Fees Earned'
+    , 'pool_fee_volume_eth': 'LP Fees Earned (ETH)'
     , 'eth_balance': 'ETH Balance'
     , 'nft_balance': 'NFT Balance'
     , 'eth_volume': 'Trading Volume (ETH)'
@@ -148,16 +154,18 @@ pools.rename(columns={'pool_address': 'Pool Address'
 
 pools['Manual Inventory Change (ETH)'] = pools['ETH Balance'] - pools['Initial ETH'] - pools['Inventory Change By Trading (ETH)']
 pools['Manual Inventory Change (NFTs)'] = pools['NFT Balance'] - pools['Initial NFTs'] - pools['Inventory Change By Trading (NFTs)']
-pools['Current Inventory Value'] = pools['ETH Balance'] + (pools['NFT Balance'] * pools['Spot Price'])
-pools['Inventory Value If Held'] = pools['Initial ETH'] + pools['Manual Inventory Change (ETH)'] + ((pools['Initial NFTs']+pools['Manual Inventory Change (NFTs)']) * pools['Spot Price'])
-pools['Impermanent Loss'] = pools['Inventory Value If Held'] - pools['Current Inventory Value']
+# pools['Current Inventory Value**'] = pools['ETH Balance'] + (pools['NFT Balance'] * pools['Spot Price'])
+# pools['Inventory Value If Held**'] = pools['Initial ETH'] + (pools['Initial NFTs'] * pools['Spot Price'])
+# pools['Current Inventory Value*'] = pools['ETH Balance'] - pools['Manual Inventory Change (ETH)'] + ((pools['NFT Balance']+pools['Manual Inventory Change (NFTs)']) * pools['Spot Price'])
+# pools['Inventory Value If Held*'] = pools['Initial ETH'] + pools['Manual Inventory Change (ETH)'] + ((pools['Initial NFTs']+pools['Manual Inventory Change (NFTs)']) * pools['Spot Price'])
+pools['Nominal Profit*'] = pools['Inventory Change By Trading (ETH)'] + (pools['Inventory Change By Trading (NFTs)'] * pools['Spot Price'])
 pools['Creation Time'] = pools['Creation Time'].str[:10]
 pools['Today'] = pd.to_datetime("now")
 pools['Creation Time'] = pd.to_datetime(pools['Creation Time'])
 pools['Age'] = (pools['Today'] - pools['Creation Time'])
 
 pooltable = pools[['Name',
-            'Fees Earned',
+            'LP Fees Earned (ETH)',
             'ETH Balance',
             'NFT Balance',
             'Trading Volume (ETH)',
@@ -171,6 +179,11 @@ pooltable = pools[['Name',
 
 pooldetails = pools[['Name',
             'Pool Address',
+            'Nominal Profit*',
+
+            'Trading Volume (ETH)',
+            'LP Fees Earned (ETH)',
+
             'ETH Balance',
             'NFT Balance',
             'Spot Price',
@@ -185,13 +198,8 @@ pooldetails = pools[['Name',
             'Inventory Change By Trading (ETH)',
             'Inventory Change By Trading (NFTs)',
 
-            'Current Inventory Value',
-            'Inventory Value If Held',
-            'Impermanent Loss',
-
             'Age',
-            'Trading Volume (ETH)',
-            'Fees Earned']]
+            ]]
 
 selection = aggrid_interactive_table(df=pooltable)
 # st.table(df)
@@ -213,3 +221,4 @@ if selection["selected_rows"]:
     st.bar_chart(data=earnings, y='Fees Earned (ETH)', x='Day')
 
     st.table(stats.T)
+    '* Value of ETH you gained/lost by trading + Value of NFTs you gained/lost by trading'

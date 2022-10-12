@@ -119,7 +119,7 @@ st.title('SudoSwap Pool Analysis')
 
 'Enter the address you used to create your pool'
 
-owner = st.text_input('Pool Owner Address', '0xd90eb9d58b8abf0c82867b5483e77373a5634eeb')
+owner = st.text_input('Pool Owner Address', '0x50664ede715e131f584d3e7eaabd7818bb20a068')
 
 ct = execute_query(owner)
 

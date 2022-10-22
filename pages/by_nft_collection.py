@@ -95,6 +95,7 @@ def aggrid_interactive_table(df: pd.DataFrame):
         enable_enterprise_modules=True,
         gridOptions=options.build(),
         theme="streamlit",
+        height=250,
         update_mode=GridUpdateMode.MODEL_CHANGED,
         allow_unsafe_jscode=True,
     )
@@ -136,7 +137,7 @@ pools = pd.DataFrame(pools.json()['result']['rows'])
 if pools.empty:
     '**Address is invalid.**'
     'If the address should be working DM me on [Twitter](https://twitter.com/0xKofi) so I can find a fix'
-    
+
 pools.rename(columns={'pool_address': 'Pool Address'
     , 'nft_contract_address' : 'NFT Contract'
     , 'name':'Name'

@@ -132,6 +132,11 @@ ct = execute_query(owner)
 
 pools = loading_loop(ct)
 pools = pd.DataFrame(pools.json()['result']['rows'])
+
+if pools.empty:
+    '**Address is invalid.**'
+    'If the address should be working DM me on [Twitter](https://twitter.com/0xKofi) so I can find a fix'
+
 pools.rename(columns={'pool_address': 'Pool Address'
     , 'nft_contract_address' : 'NFT Contract'
     , 'name':'Name'
@@ -155,11 +160,20 @@ pools.rename(columns={'pool_address': 'Pool Address'
 
 pools['Manual Inventory Change (ETH)'] = pools['ETH Balance'] - pools['Initial ETH'] - pools['Inventory Change By Trading (ETH)']
 pools['Manual Inventory Change (NFTs)'] = pools['NFT Balance'] - pools['Initial NFTs'] - pools['Inventory Change By Trading (NFTs)']
-# pools['Current Inventory Value**'] = pools['ETH Balance'] + (pools['NFT Balance'] * pools['Spot Price'])
-# pools['Inventory Value If Held**'] = pools['Initial ETH'] + (pools['Initial NFTs'] * pools['Spot Price'])
-# pools['Current Inventory Value*'] = pools['ETH Balance'] - pools['Manual Inventory Change (ETH)'] + ((pools['NFT Balance']+pools['Manual Inventory Change (NFTs)']) * pools['Spot Price'])
-# pools['Inventory Value If Held*'] = pools['Initial ETH'] + pools['Manual Inventory Change (ETH)'] + ((pools['Initial NFTs']+pools['Manual Inventory Change (NFTs)']) * pools['Spot Price'])
-pools['Nominal Profit*'] = pools['Inventory Change By Trading (ETH)'] + (pools['Inventory Change By Trading (NFTs)'] * pools['Spot Price'])
+
+pools['Manual Positive Change (ETH)'] = pools['Manual Inventory Change (ETH)'].apply(lambda x: x if x>0 else 0)
+pools['Manual Positive Change (NFTs)'] = pools['Manual Inventory Change (NFTs)'].apply(lambda x: x if x>0 else 0)
+pools['Manual Negative Change (ETH)'] = pools['Manual Inventory Change (ETH)'].apply(lambda x: x if x<0 else 0)
+pools['Manual Negative Change (NFTs)'] = pools['Manual Inventory Change (NFTs)'].apply(lambda x: x if x<0 else 0)
+
+# so that withdrawals are included in current inventory
+pools['Current Inventory Value'] = pools['ETH Balance'] - pools['Manual Negative Change (ETH)'] + ((pools['NFT Balance'] - pools['Manual Negative Change (NFTs)']) * pools['Spot Price'])
+# so that additional deposits are included in inventory you could have just held
+pools['Inventory Value If Held'] = pools['Initial ETH'] + pools['Manual Positive Change (ETH)'] + ((pools['Initial NFTs'] + pools['Manual Positive Change (NFTs)']) * pools['Spot Price'])
+
+pools['Real Profit/Loss'] = pools['Current Inventory Value'] - pools['Inventory Value If Held']
+pools['Impermanent Loss'] = pools['Current Inventory Value'] - pools['Inventory Value If Held'] - pools['LP Fees Earned (ETH)']
+
 pools['Creation Time'] = pools['Creation Time'].str[:10]
 pools['Today'] = pd.to_datetime("now")
 pools['Creation Time'] = pd.to_datetime(pools['Creation Time'])
@@ -180,7 +194,8 @@ pooltable = pools[['Name',
 
 pooldetails = pools[['Name',
             'Pool Address',
-            'Nominal Profit*',
+            'Real Profit/Loss',
+            'Impermanent Loss',
 
             'Trading Volume (ETH)',
             'LP Fees Earned (ETH)',
@@ -200,6 +215,9 @@ pooldetails = pools[['Name',
             'Inventory Change By Trading (NFTs)',
 
             'Age',
+            'Current Inventory Value',
+            'Inventory Value If Held',
+            'Pool Type'
             ]]
 
 selection = aggrid_interactive_table(df=pooltable)
@@ -208,6 +226,7 @@ selection = aggrid_interactive_table(df=pooltable)
 st.write("**Select a row to see pool specific stats:**")
 if selection["selected_rows"]:
     stats = pooldetails[pooldetails['Pool Address'] == selection["selected_rows"][0]["Pool Address"]]
+    stats = stats.reset_index()
 
     earn = execute_query2(selection["selected_rows"][0]["Pool Address"])
 
@@ -221,5 +240,59 @@ if selection["selected_rows"]:
     '**Pool Earnings Over Time**'
     st.bar_chart(data=earnings, y='Fees Earned (ETH)', x='Day')
 
-    st.table(stats.T)
-    '* Value of ETH you gained/lost by trading + Value of NFTs you gained/lost by trading'
+    if stats['Pool Type'][0] == 'trade':
+        st.write('**Name:** '+ str(stats['Name'][0]))
+        st.write('**Pool Address:** '+ str(stats['Pool Address'][0]))
+        ' '
+        st.write('**Real Profit/Loss (ETH):** '+ str("{:.2f}".format(stats['Real Profit/Loss'][0])))
+        '*-> Real Profit/Loss = Current Inventory Value - Inventory Value if Held*'
+        '*-> Current Inventory Value includes ETH/NFTs that were manually withdrawn*'
+        '*-> Inventory Value if Held includes ETH/NFTs that were manually added after pool creation*'
+        ' '
+        st.write('**Impermanent Loss (ETH):** '+ str("{:.2f}".format(stats['Impermanent Loss'][0])))
+        '*-> Impermanent Loss = Current Inventory Value - Inventory Value if Held - Fees Earned*'
+        '*-> (+ve is good, -ve is bad)*'
+        ' '
+        st.write('**LP Fees Earned (ETH):** '+ str("{:.2f}".format(stats['LP Fees Earned (ETH)'][0])))
+        st.write('**Trading Volume (ETH):** '+ str("{:.2f}".format(stats['Trading Volume (ETH)'][0])))
+        ' '
+        st.write('**ETH Balance:** '+ str("{:.2f}".format(stats['ETH Balance'][0])))
+        st.write('**NFT Balance:** '+ str(stats['NFT Balance'][0]))
+        st.write('**Spot Price:** '+ str("{:.2f}".format(stats['Spot Price'][0])))
+        ' '
+        st.write('**Manual Inventory Change (ETH):** '+ str("{:.2f}".format(stats['Manual Inventory Change (ETH)'][0])))
+        st.write('**Manual Inventory Change (NFTs):** '+ str(stats['Manual Inventory Change (NFTs)'][0]))
+        ' '
+        st.write('**Inventory Change By Trading (ETH):** '+ str("{:.2f}".format(stats['Inventory Change By Trading (ETH)'][0])))
+        st.write('**Inventory Change By Trading (NFTs):** '+ str(stats['Inventory Change By Trading (NFTs)'][0]))
+        ' '
+        st.write('**Initial ETH:** '+ str("{:.2f}".format(stats['Initial ETH'][0])))
+        st.write('**Initial NFTs:** '+ str(stats['Initial NFTs'][0]))
+        st.write('**Initial Spot Price:** '+ str("{:.2f}".format(stats['Initial Spot Price'][0])))
+        ' '
+        st.write('**Age:** '+ str(stats['Age'][0]))
+        ' '
+        '**Assumptions:**'
+        '- Value of NFTs in inventory based on "Number of NFTs * Current Spot Price of Pool. This is a flawed assumption because you would not be able to sell all these NFTs at the same price, spot would decrease with each sale.'
+    else:
+        st.write('**Name:** '+ stats['Name'][0]) #NOTE
+        st.write('**Pool Address:** '+ str(stats['Pool Address'][0]))
+        ' '
+        st.write('**LP Fees Earned (ETH):** '+ str("{:.2f}".format(stats['LP Fees Earned (ETH)'][0])))
+        st.write('**Trading Volume (ETH):** '+ str("{:.2f}".format(stats['Trading Volume (ETH)'][0])))
+        ' '
+        st.write('**ETH Balance:** '+ str("{:.2f}".format(stats['ETH Balance'][0])))
+        st.write('**NFT Balance:** '+ str(stats['NFT Balance'][0]))
+        st.write('**Spot Price:** '+ str("{:.2f}".format(stats['Spot Price'][0])))
+        ' '
+        st.write('**Manual Inventory Change (ETH):** '+ str("{:.2f}".format(stats['Manual Inventory Change (ETH)'][0])))
+        st.write('**Manual Inventory Change (NFTs):** '+ str(stats['Manual Inventory Change (NFTs)'][0]))
+        ' '
+        st.write('**Inventory Change By Trading (ETH):** '+ str("{:.2f}".format(stats['Inventory Change By Trading (ETH)'][0])))
+        st.write('**Inventory Change By Trading (NFTs):** '+ str(stats['Inventory Change By Trading (NFTs)'][0]))
+        ' '
+        st.write('**Initial ETH:** '+ str("{:.2f}".format(stats['Initial ETH'][0])))
+        st.write('**Initial NFTs:** '+ str(stats['Initial NFTs'][0]))
+        st.write('**Initial Spot Price:** '+ str("{:.2f}".format(stats['Initial Spot Price'][0])))
+        ' '
+        st.write('**Age:** '+ str(stats['Age'][0]))
